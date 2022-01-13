@@ -11,27 +11,34 @@ from email.mime.base import MIMEBase
 from email import encoders
 from email.mime.application import MIMEApplication
 
+
  #ToDo cargue del excel, y el filtro, torre=50
    
-   #El archivo que reemplaza la BD que contiene los datos operacionales
-archivo = 'D:\Independence\Documents\Downloads\ExportData_ASCII_ByTime_Independence SA 50_INF 3770.csv'
+#El archivo que reemplaza la BD que contiene los datos operacionales
+archivo = 'D:\Independence\Sistema\Desktop\export_dataframe.csv'
 
 df_csv = pd.read_csv(archivo)   
 #Se eliminan las filas inservibles
-df_csv = df_csv.drop(df_csv[df_csv['Hole Depth(ft)'] == -999.25].index) 
+#df_csv = df_csv.drop(df_csv[df_csv['Hole Depth(ft)'] == -999.25].index) 
+df_csv = df_csv.drop(df_csv[df_csv['Rig Activity Code()']== -999.25].index) 
+df_csv.replace(-999.250000 , 0)
+
+
+
 #Se pasa a dateTIme la columna
 df_csv['DateTime'] = pd.to_datetime(df_csv['DateTime'])#Columna datetime
 
+#df_csv.to_csv('export_dataframe.csv', index = False, header=True)
+
+df_csv["Seccion"]='' 
+df_csv["Estado"]=''
 #Si es necesario exportar el csv filtrado
 #df_csv.to_csv('1ExportData_ASCII_ByTime_Independence SA 50_INFA 3146.csv', index=False)
 
 
     
-def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin):
-
-  
-    
-
+def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin, seccion, estado):   
+    print(actividad)
     #Se crea un dataframe con las columnas y equivalencias a trabajar
     df = pd.DataFrame()
     df["carga_gancho"]=df_csv["Hook Load(klb)"]*1000
@@ -39,12 +46,18 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin):
     df["fecha_hora"]=df_csv["DateTime"]
     df["posicion_bloque"]=df_csv["Block Height(ft)"]
    
+    
+    #df.loc[((df.fecha_hora >= fecha_inicio) & (df.fecha_hora <= fecha_fin)) ,'Seccion']='success'
+ 
+    
+    df_csv.loc[((df_csv.DateTime >= fecha_inicio) & (df_csv.DateTime <= fecha_fin)) ,'Seccion']=seccion
+    df_csv.loc[((df_csv.DateTime >= fecha_inicio) & (df_csv.DateTime <= fecha_fin)) ,'Estado']=estado
 
     #FIltro para obtener por rango de fechas
     fecha_inicio=datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S.%f')
     fecha_fin=datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S.%f')
     df = ((df[(df.fecha_hora >= fecha_inicio) & (df.fecha_hora <= fecha_fin)]))
-
+   
     
     df = df.sort_values(by="fecha_hora").reset_index(drop=True)
     
@@ -52,7 +65,7 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin):
     indicador = 0
     contador = 0
     maximo_carga = 0    
-    bloque = 10000
+    bloque = 40000
     conexion = []
     torque = []
     carga = []
@@ -65,23 +78,23 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin):
 
         if indicador == 0:
 
-            if car > 30000:
+            if car > 50000:
                 temp = 2
                 indicador = 1                
                 profundidad_inicio = pro
 
             else:
-                if bloque < 10000:
+                if bloque < 40000:
                     if 'POOH' in actividad:
                         if bloque - pos > 3:
                             temp = 1
-                            bloque = 10000
+                            bloque = 40000
                         else:
                             temp = 0
                     else:
                         if abs(pos - bloque) > abs(profundidad_fin - profundidad_inicio):
                             temp = 1
-                            bloque = 10000
+                            bloque = 40000
                         else:
                             temp = 0
                 else:
@@ -94,7 +107,7 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin):
            
             contador = contador+1
 
-            if car < 30000:
+            if car < 50000:
                 temp = 1
                 bloque = pos
                 profundidad_fin = pro                
@@ -242,8 +255,8 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin):
     conexiones['torre'] = torre
     conexiones['pozo'] = pozo
     conexiones['conexion'] = list(range(1, len(conexiones)+1))
-    ilt=ilt_automate(conexiones)
-    return conexiones,ilt
+   
+    return conexiones
 
 def ilt_automate(df):
 
@@ -318,7 +331,11 @@ def ilt_automate(df):
         tiempoTotalILTHoras = tiempoTotalILT/60  # Tiempo total en horas de los ILT's
       
         return tiempoTotalILTHoras
+
     
+
+def returnDF():
+    return df_csv
 
 def send_email(name_excel,torre,pozo):
 
@@ -328,14 +345,16 @@ def send_email(name_excel,torre,pozo):
     msg['Subject'] = 'Tiempos Viajes Perforación Torre:'+torre+", Pozo:"+pozo
 
     msg['From'] = 'informacion@skanhawk.com'
-    msg['To'] = 'lmrincon@skanhawk.com,yfcifuentes@skanhawk.com'
+    #msg['To'] = 'lmrincon@skanhawk.com,yfcifuentes@skanhawk.com'
+    msg['To'] = 'yfcifuentes@skanhawk.com'
     # msg["Cc"] = "serenity@example.com,inara@example.com"
     password = "Inde3030*"  
-    
+        
     #msg.attach(email_content)
     excel = MIMEApplication(open(name_excel, 'rb').read())
     excel.add_header('Content-Disposition', 'attachment', filename= msg['Subject']+".xlsx")
     msg.attach(excel)
+    
    
 
     try:
