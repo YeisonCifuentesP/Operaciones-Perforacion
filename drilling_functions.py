@@ -15,7 +15,7 @@ from email.mime.application import MIMEApplication
  #ToDo cargue del excel, y el filtro, torre=50
    
 #El archivo que reemplaza la BD que contiene los datos operacionales
-archivo = 'D:\Independence\Sistema\Desktop\export_dataframe.csv'
+archivo = 'D:\Independence\Sistema\Desktop\Desarrollo Perforación\Pruebas All\export_dataframe.csv'
 
 df_csv = pd.read_csv(archivo)   
 #Se eliminan las filas inservibles
@@ -23,7 +23,7 @@ df_csv = pd.read_csv(archivo)
 df_csv = df_csv.drop(df_csv[df_csv['Rig Activity Code()']== -999.25].index) 
 df_csv.replace(-999.250000 , 0)
 
-
+Yeison es mas canson
 
 #Se pasa a dateTIme la columna
 df_csv['DateTime'] = pd.to_datetime(df_csv['DateTime'])#Columna datetime

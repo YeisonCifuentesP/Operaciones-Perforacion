@@ -8,7 +8,7 @@ from os import remove
 
 
 #Archivo con los viajes que se realizaron en el pozo de perforación
-archivo = 'D:\Independence\Sistema\Desktop\Drilling datos_ingreso_Viajes.xlsx'
+archivo = 'D:\Independence\Sistema\Desktop\Desarrollo Perforación\Pruebas All\Drilling datos_ingreso_Viajes.xlsx'
 df_export=pd.DataFrame()
 ilt_export=list()
 df = pd.read_excel(archivo, sheet_name='Marco_tiempo')   
