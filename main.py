@@ -38,13 +38,13 @@ name_excel='tuberia_ilts_ExporData.xlsx'
 df_dataExport=returnDF()
 writer = pd.ExcelWriter(name_excel, engine='xlsxwriter')
 df_export.to_excel(writer,sheet_name='Tiempos_Viajes', index = False)
-
 df_dataExport.to_excel(writer,sheet_name='Data', index = False)
 writer.save()
+writer.close()
 send_email(name_excel,torre,pozo)
 remove(name_excel)
         
-print("Hola")
+
     
 
 

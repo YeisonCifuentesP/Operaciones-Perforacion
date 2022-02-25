@@ -21,6 +21,9 @@ df_csv = pd.read_csv(archivo)
 #Se eliminan las filas inservibles
 #df_csv = df_csv.drop(df_csv[df_csv['Hole Depth(ft)'] == -999.25].index) 
 df_csv = df_csv.drop(df_csv[df_csv['Rig Activity Code()']== -999.25].index) 
+#df_csv = df_csv.drop(df_csv[df_csv['Bit Position(ft)'] > 11910].index) 
+
+
 df_csv.replace(-999.250000 , 0)
 
 
@@ -28,10 +31,13 @@ df_csv.replace(-999.250000 , 0)
 #Se pasa a dateTIme la columna
 df_csv['DateTime'] = pd.to_datetime(df_csv['DateTime'])#Columna datetime
 
-#df_csv.to_csv('export_dataframe.csv', index = False, header=True)
+#df_csv.to_csv('export_dataframe_Cosecha_C03.csv', index = False, header=True)
 
 df_csv["Seccion"]='' 
 df_csv["Estado"]=''
+df_csv["Actividad"]=''
+df_csv["Pozo"]=''
+df_csv["RIG"]=''
 #Si es necesario exportar el csv filtrado
 #df_csv.to_csv('1ExportData_ASCII_ByTime_Independence SA 50_INFA 3146.csv', index=False)
 
@@ -48,11 +54,12 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin, seccion, esta
    
     
     #df.loc[((df.fecha_hora >= fecha_inicio) & (df.fecha_hora <= fecha_fin)) ,'Seccion']='success'
- 
-    
+    df_csv.loc[((df_csv.DateTime >= fecha_inicio) & (df_csv.DateTime <= fecha_fin)) ,'RIG']=torre
+    df_csv.loc[((df_csv.DateTime >= fecha_inicio) & (df_csv.DateTime <= fecha_fin)) ,'Pozo']=pozo
     df_csv.loc[((df_csv.DateTime >= fecha_inicio) & (df_csv.DateTime <= fecha_fin)) ,'Seccion']=seccion
     df_csv.loc[((df_csv.DateTime >= fecha_inicio) & (df_csv.DateTime <= fecha_fin)) ,'Estado']=estado
-
+    df_csv.loc[((df_csv.DateTime >= fecha_inicio) & (df_csv.DateTime <= fecha_fin)) ,'Actividad']=actividad    
+    
     #FIltro para obtener por rango de fechas
     fecha_inicio=datetime.strptime(fecha_inicio, '%Y-%m-%d %H:%M:%S.%f')
     fecha_fin=datetime.strptime(fecha_fin, '%Y-%m-%d %H:%M:%S.%f')
@@ -63,38 +70,39 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin, seccion, esta
     
 
     indicador = 0
+    indice=0;
     contador = 0
     maximo_carga = 0    
-    bloque = 40000
+    bloque = 55000
     conexion = []
     torque = []
     carga = []
    
 
     for car, pos, pro in zip(df['carga_gancho'][0:], df['posicion_bloque'][0:], df['profundidad'][0:]):
-
+        indice=indice+1
         if car > maximo_carga:
             maximo_carga = car
 
         if indicador == 0:
 
-            if car > 50000:
+            if car > 55000:
                 temp = 2
                 indicador = 1                
                 profundidad_inicio = pro
 
             else:
-                if bloque < 40000:
+                if bloque < 55000:
                     if 'POOH' in actividad:
-                        if bloque - pos > 3:
+                        if bloque - pos > 3:#Confirmar si es un desplazamiento 
                             temp = 1
-                            bloque = 40000
+                            bloque = 55000
                         else:
                             temp = 0
                     else:
                         if abs(pos - bloque) > abs(profundidad_fin - profundidad_inicio):
                             temp = 1
-                            bloque = 40000
+                            bloque = 55000
                         else:
                             temp = 0
                 else:
@@ -105,16 +113,21 @@ def viaje_tuberia(torre, pozo, actividad, fecha_inicio, fecha_fin, seccion, esta
 
         else:
            
-            contador = contador+1
-
-            if car < 50000:
-                temp = 1
-                bloque = pos
-                profundidad_fin = pro                
-                carga.append(maximo_carga)                
-                contador = 0                
-                maximo_carga = 0  # reset Carga
-                indicador = 0
+            contador = contador+1            
+           
+            if car < 55000:
+                    #Validar si la conexión es estable(1 minuto)
+                if(len(df[indice:indice+12].loc[df['carga_gancho'] > 55000])==0):                    
+                    temp = 1
+                    bloque = pos
+                    profundidad_fin = pro                
+                    carga.append(maximo_carga)                
+                    contador = 0                
+                    maximo_carga = 0  # reset Carga
+                    indicador = 0
+                else:
+                    temp = 0               
+                    carga.append(maximo_carga)
 
             else:
                 temp = 0               
